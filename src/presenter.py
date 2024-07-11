@@ -1,4 +1,3 @@
-# presenter.py
 import os
 import shutil
 import threading
@@ -8,20 +7,29 @@ from model import DuplicateImageFinder
 from view import UIComponents
 import psutil
 from config import Config
+import signal
 
 class DuplicateImagePresenter:
     def __init__(self, root: tk.Tk, finder: DuplicateImageFinder, view: UIComponents):
         self.root = root
         self.finder = finder
         self.view = view
-        self.current_image_paths = [None, None]  # 現在表示中の画像のパスを保持
+        self.current_image_paths = [None, None]
         self.setup_bindings()
         self.monitor_thread = threading.Thread(target=self.monitor_resources)
+        self.finder_thread = None
+        self._shutdown_requested = False
 
-        # イベントリスナーの設定
         self.finder.on_progress_update.add_listener(self.update_progress)
         self.finder.on_duplicate_found.add_listener(self.handle_duplicate_found)
         self.finder.on_processing_complete.add_listener(self.handle_processing_complete)
+
+        signal.signal(signal.SIGINT, self._signal_handler)
+
+    def _signal_handler(self, signum, frame):
+        self._shutdown_requested = True
+        print("\nShutdown requested. Cleaning up...")
+        self.on_closing()
 
     def setup_bindings(self):
         """キーバインディングとウィンドウクローズイベントの設定"""
@@ -31,12 +39,15 @@ class DuplicateImagePresenter:
     def start(self):
         """アプリの起動"""
         self.update_pending_count()
-        threading.Thread(target=self.finder.find_duplicates).start()
+        self.finder_thread = threading.Thread(target=self.finder.find_duplicates)
+        self.finder_thread.start()
         self.monitor_thread.start()
         self.next_image()
 
     def next_image(self):
         """次の画像を表示"""
+        if self._shutdown_requested:
+            return
         item = self.finder.get_next_duplicate()
         if item is None:
             if self.finder.is_processing_complete():
@@ -55,7 +66,7 @@ class DuplicateImagePresenter:
         self.view.setFrameTextA(os.path.basename(filepath1))
         self.view.setFrameTextB(os.path.basename(filepath2))
         self.view.setStatusText("重複画像が検出されました")
-        self.current_image_paths = [filepath1, filepath2]  # 現在の画像パスを更新
+        self.current_image_paths = [filepath1, filepath2]
         self.update_pending_count()
         self.root.update_idletasks()
 
@@ -86,12 +97,13 @@ class DuplicateImagePresenter:
     def on_closing(self):
         """ウィンドウクローズ時のハンドリング"""
         self.finder.stop()
+        self._shutdown_requested = True
         self.root.quit()
         self.root.destroy()
 
     def update_progress(self, value: float):
         """進捗の更新"""
-        self.view.setProgress(100, value)  # Assuming 100 is the max value for simplicity
+        self.view.setProgress(100, value)
         self.root.update_idletasks()
 
     def update_pending_count(self):
@@ -106,7 +118,7 @@ class DuplicateImagePresenter:
 
     def monitor_resources(self):
         """リソースの監視"""
-        while not self.finder.is_processing_complete():
+        while not self.finder.is_processing_complete() and not self._shutdown_requested:
             cpu_usage = psutil.cpu_percent(interval=Config.RESOURCE_CHECK_INTERVAL)
             mem_usage = psutil.virtual_memory().percent
             print(f"CPU Usage: {cpu_usage}% | Memory Usage: {mem_usage}%")

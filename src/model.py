@@ -1,4 +1,3 @@
-# model.py
 import os
 import queue
 import threading
