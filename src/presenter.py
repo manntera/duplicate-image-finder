@@ -37,32 +37,24 @@ class DuplicateImagePresenter:
                 return
             self.display_image_pair(item)
         else:
-            self.view.status_label.config(text="待機中...")
+            self.view.setStatusText("待機中...")
             self.root.after(Config.UI_UPDATE_INTERVAL, self.next_image)
 
     def display_image_pair(self, item: Tuple[str, str]):
         """画像のペアを表示"""
         filepath1, filepath2 = item
-        frame1_size = (self.view.frame1.winfo_width(), self.view.frame1.winfo_height())
-        frame2_size = (self.view.frame2.winfo_width(), self.view.frame2.winfo_height())
-        img1 = self.view.resize_image(filepath1, frame1_size)
-        img2 = self.view.resize_image(filepath2, frame2_size)
-        self.view.panel1.config(image=img1)
-        self.view.panel1.image = img1
-        self.view.panel2.config(image=img2)
-        self.view.panel2.image = img2
-        self.view.label1.config(text=os.path.basename(filepath1))
-        self.view.label2.config(text=os.path.basename(filepath2))
-        self.view.status_label.config(text="重複画像が検出されました")
-        self.view.panel1.image_path = filepath1
-        self.view.panel2.image_path = filepath2
+        self.view.setFrameImageA(filepath1)
+        self.view.setFrameImageB(filepath2)
+        self.view.setFrameTextA(os.path.basename(filepath1))
+        self.view.setFrameTextB(os.path.basename(filepath2))
+        self.view.setStatusText("重複画像が検出されました")
         self.update_pending_count()
         self.root.update_idletasks()
 
     def handle_processing_complete(self):
         """処理完了時のハンドリング"""
         if self.finder.processing_complete:
-            self.view.status_label.config(text="処理完了")
+            self.view.setStatusText("処理完了")
             self.root.after(2000, self.on_closing)
         else:
             self.root.after(Config.UI_UPDATE_INTERVAL, self.next_image)
@@ -93,14 +85,13 @@ class DuplicateImagePresenter:
 
     def update_progress(self, value: float):
         """進捗の更新"""
-        self.view.progress["value"] = value
-        self.view.progress_label.config(text=f"{value:.3f}%")
+        self.view.setProgress(100, value)  # Assuming 100 is the max value for simplicity
         self.root.update_idletasks()
 
     def update_pending_count(self):
         """待機中の画像数を更新"""
         pending_count = self.finder.result_queue.qsize()
-        self.view.pending_count_label.config(text=f"待機中の重複画像数: {pending_count}")
+        self.view.setWaitList(pending_count)
         self.root.update_idletasks()
 
     def monitor_resources(self):
