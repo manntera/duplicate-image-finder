@@ -92,8 +92,8 @@ class DuplicateImageFinder:
             image_hashes[image_hash] = filepath
 
     def _update_progress(self, count: int):
-        if count % 100 == 0:
-            self.on_progress_update.notify(min(count / self._total_files * 100, 100))
+        progress = (count / self._total_files) * 100
+        self.on_progress_update.notify(progress)
 
     def _get_all_image_files(self) -> List[str]:
         all_files = []

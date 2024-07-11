@@ -108,11 +108,11 @@ class UIComponents:
     def set_status_text(self, text: str):
         self._status_label.config(text=text)
 
-    def set_progress(self, max_value: int, current_value: int):
+    def set_progress(self, max_value: int, current_value: float):
         self._progress["maximum"] = max_value
         self._progress["value"] = current_value
         percent = (current_value / max_value) * 100
-        self._progress_label.config(text=f"{percent:.2f}%")
+        self._progress_label.config(text=f"{current_value:.2f}%")
 
     def set_wait_list(self, count: int):
         self._pending_count_label.config(text=f"待機中の重複画像数: {count}")
