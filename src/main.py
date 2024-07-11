@@ -10,6 +10,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tkinter import ttk
 import psutil
 import configparser
+import multiprocessing
+import cupy as cp
+import numpy as np
 
 
 class Config:
@@ -56,8 +59,6 @@ class DuplicateImageFinder:
         self.processing_complete = False
         self.update_pending_callback = update_pending_callback
         self.lock = threading.Lock()
-        self.num_threads = Config.INITIAL_NUM_THREADS
-        self.batch_size = Config.INITIAL_BATCH_SIZE
 
     def find_duplicates(self, progress_callback: Callable[[float], None]):
         """重複画像を探す"""
@@ -71,7 +72,9 @@ class DuplicateImageFinder:
             try:
                 with Image.open(filepath) as image:
                     image.thumbnail((500, 500))
-                    image_hash = imagehash.phash(image)
+                    image_array = np.array(image)
+                    image_gpu = cp.asarray(image_array)
+                    image_hash = imagehash.phash(Image.fromarray(cp.asnumpy(image_gpu)))
                 duplicate_found = False
                 with self.lock:
                     if filepath in image_hashes.values():
@@ -95,11 +98,11 @@ class DuplicateImageFinder:
         all_files = self._get_all_image_files()
         self.total_files = len(all_files)
 
-        with ThreadPoolExecutor(max_workers=self.num_threads) as executor:
-            for i in range(0, self.total_files, self.batch_size):
+        with ThreadPoolExecutor(max_workers=Config.INITIAL_NUM_THREADS) as executor:
+            for i in range(0, self.total_files, Config.INITIAL_BATCH_SIZE):
                 if self.stop_event.is_set():
                     break
-                batch = all_files[i:i + self.batch_size]
+                batch = all_files[i:i + Config.INITIAL_BATCH_SIZE]
                 futures = [executor.submit(process_image, filepath) for filepath in batch]
                 for future in as_completed(futures):
                     future.result()
@@ -116,20 +119,6 @@ class DuplicateImageFinder:
                 if file.lower().endswith(('.png', '.jpg', '.jpeg')):
                     all_files.append(os.path.join(root, file))
         return all_files
-
-    def adjust_resources(self):
-        """リソースの調整"""
-        cpu_usage = psutil.cpu_percent(interval=Config.RESOURCE_CHECK_INTERVAL)
-        mem_usage = psutil.virtual_memory().percent
-
-        if cpu_usage > Config.HIGH_RESOURCE_THRESHOLD or mem_usage > Config.HIGH_RESOURCE_THRESHOLD:
-            self.num_threads = max(1, self.num_threads - 1)
-            self.batch_size = max(10, self.batch_size // 2)
-        else:
-            self.num_threads = min(32, self.num_threads + 1)
-            self.batch_size = min(1000, self.batch_size * 2)
-
-        print(f"Adjusted resources: Threads={self.num_threads}, Batch size={self.batch_size}")
 
     def stop(self):
         """処理を停止"""
@@ -309,7 +298,6 @@ class DuplicateImageApp:
     def monitor_resources(self):
         """リソースの監視"""
         while not self.finder.stop_event.is_set():
-            self.finder.adjust_resources()
             cpu_usage = psutil.cpu_percent(interval=Config.RESOURCE_CHECK_INTERVAL)
             mem_usage = psutil.virtual_memory().percent
             print(f"CPU Usage: {cpu_usage}% | Memory Usage: {mem_usage}%")
