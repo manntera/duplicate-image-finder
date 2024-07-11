@@ -53,6 +53,7 @@ class DuplicateImagePresenter:
                 self._handle_processing_complete()
             else:
                 self.view.set_status_text("待機中...")
+                self.view.clear_images()  # 画像をクリア
                 self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
         else:
             self._display_image_pair(item)

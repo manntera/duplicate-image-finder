@@ -76,6 +76,14 @@ class UIComponents:
                 img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                 return ImageTk.PhotoImage(img)
 
+    def clear_images(self):
+        self._panel1.config(image='')
+        self._panel1.image = None
+        self._panel2.config(image='')
+        self._panel2.image = None
+        self._label1.config(text='')
+        self._label2.config(text='')
+    
     def set_instruction_text(self, text: str):
         self._instruction_label.config(text=text)
 
