@@ -1,0 +1,6 @@
+[Paths]
+image_folder = /mnt/g/共有ドライブ/メディア/画像/temp/かかお
+trash_folder = /mnt/c/Users/sota.ogata/Downloads/Trash2
+
+[Settings]
+similarity_threshold = 5
