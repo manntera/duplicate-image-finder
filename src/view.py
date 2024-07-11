@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 from typing import Tuple
 from config import Config
 
+
 class UIComponents:
     def __init__(self, root: tk.Tk):
         self._root = root
@@ -79,43 +80,43 @@ class UIComponents:
                 img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                 return ImageTk.PhotoImage(img)
 
-    def setInstructionText(self, text: str):
+    def set_instruction_text(self, text: str):
         """操作方法のUIを更新"""
         self._instruction_label.config(text=text)
 
-    def setFrameImageA(self, image_path: str):
+    def set_frame_image_a(self, image_path: str):
         """左枠の画像を更新"""
         frame_size = (self._frame1.winfo_width(), self._frame1.winfo_height())
         image_data = self._resize_image(image_path, frame_size)
         self._panel1.config(image=image_data)
         self._panel1.image = image_data
 
-    def setFrameTextA(self, text: str):
+    def set_frame_text_a(self, text: str):
         """左枠の文字表示を更新"""
         self._label1.config(text=text)
 
-    def setFrameImageB(self, image_path: str):
+    def set_frame_image_b(self, image_path: str):
         """右枠の画像を更新"""
         frame_size = (self._frame2.winfo_width(), self._frame2.winfo_height())
         image_data = self._resize_image(image_path, frame_size)
         self._panel2.config(image=image_data)
         self._panel2.image = image_data
 
-    def setFrameTextB(self, text: str):
+    def set_frame_text_b(self, text: str):
         """右枠の文字表示を更新"""
         self._label2.config(text=text)
 
-    def setStatusText(self, text: str):
+    def set_status_text(self, text: str):
         """status_labelの文字列を更新"""
         self._status_label.config(text=text)
 
-    def setProgress(self, max_value: int, current_value: int):
+    def set_progress(self, max_value: int, current_value: int):
         """プログレスバーとパーセント表記を更新"""
         self._progress["maximum"] = max_value
         self._progress["value"] = current_value
         percent = (current_value / max_value) * 100
         self._progress_label.config(text=f"{percent:.2f}%")
 
-    def setWaitList(self, count: int):
+    def set_wait_list(self, count: int):
         """待機中の重複画像数を更新"""
         self._pending_count_label.config(text=f"待機中の重複画像数: {count}")

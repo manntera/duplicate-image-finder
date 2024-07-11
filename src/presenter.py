@@ -9,6 +9,7 @@ import psutil
 from config import Config
 import signal
 
+
 class DuplicateImagePresenter:
     def __init__(self, root: tk.Tk, finder: DuplicateImageFinder, view: UIComponents):
         self.root = root
@@ -53,7 +54,7 @@ class DuplicateImagePresenter:
             if self.finder.is_processing_complete():
                 self.handle_processing_complete()
             else:
-                self.view.setStatusText("待機中...")
+                self.view.set_status_text("待機中...")
                 self.root.after(Config.UI_UPDATE_INTERVAL, self.next_image)
         else:
             self.display_image_pair(item)
@@ -61,18 +62,18 @@ class DuplicateImagePresenter:
     def display_image_pair(self, item: Tuple[str, str]):
         """画像のペアを表示"""
         filepath1, filepath2 = item
-        self.view.setFrameImageA(filepath1)
-        self.view.setFrameImageB(filepath2)
-        self.view.setFrameTextA(os.path.basename(filepath1))
-        self.view.setFrameTextB(os.path.basename(filepath2))
-        self.view.setStatusText("重複画像が検出されました")
+        self.view.set_frame_image_a(filepath1)
+        self.view.set_frame_image_b(filepath2)
+        self.view.set_frame_text_a(os.path.basename(filepath1))
+        self.view.set_frame_text_b(os.path.basename(filepath2))
+        self.view.set_status_text("重複画像が検出されました")
         self.current_image_paths = [filepath1, filepath2]
         self.update_pending_count()
         self.root.update_idletasks()
 
     def handle_processing_complete(self):
         """処理完了時のハンドリング"""
-        self.view.setStatusText("処理完了")
+        self.view.set_status_text("処理完了")
         self.root.after(2000, self.on_closing)
 
     def handle_keypress(self, event: tk.Event):
@@ -103,13 +104,13 @@ class DuplicateImagePresenter:
 
     def update_progress(self, value: float):
         """進捗の更新"""
-        self.view.setProgress(100, value)
+        self.view.set_progress(100, value)
         self.root.update_idletasks()
 
     def update_pending_count(self):
         """待機中の画像数を更新"""
         pending_count = self.finder.get_pending_count()
-        self.view.setWaitList(pending_count)
+        self.view.set_wait_list(pending_count)
         self.root.update_idletasks()
 
     def handle_duplicate_found(self, filepath1: str, filepath2: str):

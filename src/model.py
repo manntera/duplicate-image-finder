@@ -9,6 +9,7 @@ import cupy as cp
 import numpy as np
 from config import Config
 
+
 class Event:
     def __init__(self):
         self.listeners = []
@@ -22,6 +23,7 @@ class Event:
     def notify(self, *args, **kwargs):
         for listener in self.listeners:
             listener(*args, **kwargs)
+
 
 class DuplicateImageFinder:
     def __init__(self, image_folder: str, trash_folder: str, similarity_threshold: int):
