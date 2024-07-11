@@ -14,8 +14,8 @@ import configparser
 
 class Config:
     MAX_IMAGES = 50000
-    NUM_THREADS = 4
-    BATCH_SIZE = 100
+    INITIAL_NUM_THREADS = 4
+    INITIAL_BATCH_SIZE = 100
     WINDOW_TITLE = "Duplicate Image Finder"
     IMAGE_DISPLAY_SIZE = (250, 250)
     PROGRESS_BAR_LENGTH = 200
@@ -56,6 +56,8 @@ class DuplicateImageFinder:
         self.processing_complete = False
         self.update_pending_callback = update_pending_callback
         self.lock = threading.Lock()
+        self.num_threads = Config.INITIAL_NUM_THREADS
+        self.batch_size = Config.INITIAL_BATCH_SIZE
 
     def find_duplicates(self, progress_callback: Callable[[float], None]):
         """重複画像を探す"""
@@ -89,11 +91,11 @@ class DuplicateImageFinder:
         all_files = self._get_all_image_files()
         self.total_files = len(all_files)
 
-        with ThreadPoolExecutor(max_workers=Config.NUM_THREADS) as executor:
-            for i in range(0, self.total_files, Config.BATCH_SIZE):
+        with ThreadPoolExecutor(max_workers=self.num_threads) as executor:
+            for i in range(0, self.total_files, self.batch_size):
                 if self.stop_event.is_set():
                     break
-                batch = all_files[i:i + Config.BATCH_SIZE]
+                batch = all_files[i:i + self.batch_size]
                 futures = [executor.submit(process_image, filepath) for filepath in batch]
                 for future in as_completed(futures):
                     future.result()
@@ -110,6 +112,20 @@ class DuplicateImageFinder:
                 if file.lower().endswith(('.png', '.jpg', '.jpeg')):
                     all_files.append(os.path.join(root, file))
         return all_files
+
+    def adjust_resources(self):
+        """リソースの調整"""
+        cpu_usage = psutil.cpu_percent(interval=Config.RESOURCE_CHECK_INTERVAL)
+        mem_usage = psutil.virtual_memory().percent
+
+        if cpu_usage > Config.HIGH_RESOURCE_THRESHOLD or mem_usage > Config.HIGH_RESOURCE_THRESHOLD:
+            self.num_threads = max(1, self.num_threads - 1)
+            self.batch_size = max(10, self.batch_size // 2)
+        else:
+            self.num_threads = min(32, self.num_threads + 1)
+            self.batch_size = min(1000, self.batch_size * 2)
+
+        print(f"Adjusted resources: Threads={self.num_threads}, Batch size={self.batch_size}")
 
     def stop(self):
         """処理を停止"""
@@ -289,6 +305,7 @@ class DuplicateImageApp:
     def monitor_resources(self):
         """リソースの監視"""
         while not self.finder.stop_event.is_set():
+            self.finder.adjust_resources()
             cpu_usage = psutil.cpu_percent(interval=Config.RESOURCE_CHECK_INTERVAL)
             mem_usage = psutil.virtual_memory().percent
             print(f"CPU Usage: {cpu_usage}% | Memory Usage: {mem_usage}%")
