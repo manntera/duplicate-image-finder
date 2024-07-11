@@ -74,12 +74,16 @@ class DuplicateImageFinder:
                     image_hash = imagehash.phash(image)
                 duplicate_found = False
                 with self.lock:
+                    if filepath in image_hashes.values():
+                        return
+
                     for existing_hash, existing_path in image_hashes.items():
                         if abs(image_hash - existing_hash) <= self.similarity_threshold:
                             self.result_queue.put((filepath, existing_path))
                             self.update_pending_callback(self.result_queue.qsize())
                             duplicate_found = True
                             break
+
                     if not duplicate_found:
                         image_hashes[image_hash] = filepath
                 count += 1
