@@ -97,8 +97,18 @@ class DuplicateImagePresenter:
         shutil.move(file_path, os.path.join(trash_folder, os.path.basename(file_path)))
 
     def _on_closing(self):
-        self.finder.stop()
         self._shutdown_requested = True
+        threading.Thread(target=self._shutdown_procedure).start()
+
+    def _shutdown_procedure(self):
+        self.finder.stop()
+
+        if self.finder_thread is not None:
+            self.finder_thread.join()  # Finderスレッドが終了するのを待つ
+
+        if self.monitor_thread.is_alive():
+            self.monitor_thread.join()  # Monitorスレッドが終了するのを待つ
+
         self.root.quit()
         self.root.destroy()
 
