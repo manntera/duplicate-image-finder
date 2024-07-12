@@ -76,13 +76,9 @@ class DuplicateImageFinder:
         self._total_files = len(all_files)
 
         with ThreadPoolExecutor(max_workers=Config.INITIAL_NUM_THREADS) as executor:
-            for i in range(0, self._total_files, Config.INITIAL_BATCH_SIZE):
-                if self._stop_event.is_set():
-                    break
-                batch = all_files[i:i + Config.INITIAL_BATCH_SIZE]
-                futures = [executor.submit(process_image, filepath) for filepath in batch]
-                for future in as_completed(futures):
-                    future.result()
+            futures = [executor.submit(process_image, filepath) for filepath in all_files]
+            for future in as_completed(futures):
+                future.result()
 
         self._processing_complete = True
         self._result_queue.put(None)
