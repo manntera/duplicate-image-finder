@@ -106,7 +106,8 @@ class DuplicateImageFinder:
             if filepath in image_hashes.values():
                 return
 
-            for existing_hash, existing_path in list(image_hashes.items()):
+            image_hashes_copy = list(image_hashes.items())
+            for existing_hash, existing_path in image_hashes_copy:
                 if abs(image_hash - existing_hash) <= self._similarity_threshold:
                     self._result_queue.put((filepath, existing_path))
                     self.on_duplicate_found.notify(filepath, existing_path)
