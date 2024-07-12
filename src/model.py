@@ -67,6 +67,8 @@ class DuplicateImageFinder:
                 self._check_for_duplicate(filepath, image_hash, image_hashes)
                 count += 1
                 self._update_progress(count)
+                if count % Config.CACHE_SAVE_INTERVAL == 0:  # 定期的にキャッシュを保存
+                    self._save_cache()
             except Exception as e:
                 print(f"Error processing {filepath}: {e}")
 
@@ -130,6 +132,7 @@ class DuplicateImageFinder:
 
     def stop(self):
         self._stop_event.set()
+        self._save_cache()  # 停止時にキャッシュを保存
 
     def get_next_duplicate(self) -> Tuple[str, str] | None:
         return self._result_queue.get() if not self._result_queue.empty() else None

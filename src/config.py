@@ -12,6 +12,7 @@ class Config:
     RESOURCE_CHECK_INTERVAL = 1
     HIGH_RESOURCE_THRESHOLD = 90
     UI_UPDATE_INTERVAL = 100
+    CACHE_SAVE_INTERVAL = 50
     FONT = ("Noto Sans CJK JP", 12)
     INSTRUCTION_TEXT = (
         "操作方法:\n"
