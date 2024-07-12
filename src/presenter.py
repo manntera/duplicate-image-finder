@@ -54,11 +54,11 @@ class DuplicateImagePresenter:
                     self._handle_processing_complete()
                 else:
                     self.view.set_status_text("待機中...")
-                    self.view.clear_images()  # 画像をクリア
+                    self.view.clear_images()
                     self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
             else:
                 self.view.set_status_text("待機中...")
-                self.view.clear_images()  # 画像をクリア
+                self.view.clear_images()
                 self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
         else:
             self._display_image_pair(item)
@@ -104,11 +104,14 @@ class DuplicateImagePresenter:
         self.finder.stop()
 
         if self.finder_thread is not None:
-            self.finder_thread.join()  # Finderスレッドが終了するのを待つ
+            self.finder_thread.join()
 
         if self.monitor_thread.is_alive():
-            self.monitor_thread.join()  # Monitorスレッドが終了するのを待つ
+            self.monitor_thread.join()
 
+        self.root.after(0, self._destroy_root)
+
+    def _destroy_root(self):
         self.root.quit()
         self.root.destroy()
 
