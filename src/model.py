@@ -1,6 +1,7 @@
 import os
 import queue
 import threading
+import json
 from typing import List, Tuple
 from PIL import Image
 import imagehash
@@ -24,10 +25,11 @@ class Event:
             listener(*args, **kwargs)
 
 class DuplicateImageFinder:
-    def __init__(self, image_folder: str, trash_folder: str, similarity_threshold: int):
+    def __init__(self, image_folder: str, trash_folder: str, similarity_threshold: int, cache_file: str = 'image_hash_cache.json'):
         self._image_folder = image_folder
         self._trash_folder = trash_folder
         self._similarity_threshold = similarity_threshold
+        self._cache_file = cache_file
         self._result_queue: queue.Queue = queue.Queue()
         self._to_delete: List[str] = []
         self._stop_event = threading.Event()
@@ -38,6 +40,19 @@ class DuplicateImageFinder:
         self.on_progress_update = Event()
         self.on_duplicate_found = Event()
         self.on_processing_complete = Event()
+
+        self._load_cache()
+
+    def _load_cache(self):
+        if os.path.exists(self._cache_file):
+            with open(self._cache_file, 'r') as f:
+                self._image_hash_cache = json.load(f)
+        else:
+            self._image_hash_cache = {}
+
+    def _save_cache(self):
+        with open(self._cache_file, 'w') as f:
+            json.dump(self._image_hash_cache, f)
 
     def find_duplicates(self):
         image_hashes = {}
@@ -70,13 +85,23 @@ class DuplicateImageFinder:
         self._processing_complete = True
         self._result_queue.put(None)
         self.on_processing_complete.notify()
+        self._save_cache()
 
     def _calculate_image_hash(self, filepath: str):
+        file_mod_time = os.path.getmtime(filepath)
+        cache_key = f"{filepath}:{file_mod_time}"
+
+        if cache_key in self._image_hash_cache:
+            return imagehash.hex_to_hash(self._image_hash_cache[cache_key])
+
         with Image.open(filepath) as image:
             image.thumbnail((500, 500))
             image_array = np.array(image)
             image_gpu = cp.asarray(image_array)
-            return imagehash.phash(Image.fromarray(cp.asnumpy(image_gpu)))
+            image_hash = imagehash.phash(Image.fromarray(cp.asnumpy(image_gpu)))
+
+        self._image_hash_cache[cache_key] = str(image_hash)
+        return image_hash
 
     def _check_for_duplicate(self, filepath: str, image_hash, image_hashes: dict):
         with self._lock:

@@ -5,3 +5,4 @@ __pycache__/
 src-image
 trash-image
 config.ini
+image_hash_cache.json

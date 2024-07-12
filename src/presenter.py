@@ -50,7 +50,12 @@ class DuplicateImagePresenter:
         item = self.finder.get_next_duplicate()
         if item is None:
             if self.finder.is_processing_complete():
-                self._handle_processing_complete()
+                if self.finder.get_pending_count() == 0:
+                    self._handle_processing_complete()
+                else:
+                    self.view.set_status_text("待機中...")
+                    self.view.clear_images()  # 画像をクリア
+                    self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
             else:
                 self.view.set_status_text("待機中...")
                 self.view.clear_images()  # 画像をクリア
@@ -70,8 +75,12 @@ class DuplicateImagePresenter:
         self.root.update_idletasks()
 
     def _handle_processing_complete(self):
-        self.view.set_status_text("処理完了")
-        self.root.after(2000, self._on_closing)
+        if self.finder.get_pending_count() == 0:
+            self.view.set_status_text("処理完了")
+            self.root.after(2000, self._on_closing)
+        else:
+            self.view.set_status_text("待機中...")
+            self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
 
     def _handle_keypress(self, event: tk.Event):
         if event.keysym in ['Left', 'Right']:
