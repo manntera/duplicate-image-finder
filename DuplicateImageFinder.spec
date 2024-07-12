@@ -58,7 +58,7 @@ a = Analysis(
         'cupy.cuda.memory',
         'cupy.cuda.stream',
         'cupy.cuda.graph',
-        'cupy_backends.cuda._softlink',  # 追加
+        'cupy_backends.cuda._softlink',
     ],
     hookspath=[],
     hooksconfig={},
