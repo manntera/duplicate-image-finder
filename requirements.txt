@@ -1,4 +1,5 @@
 Pillow
 imagehash
 psutil
-cupy
+cupy-cuda12x
+fastrlock
