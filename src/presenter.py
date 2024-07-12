@@ -1,7 +1,6 @@
 import os
 import shutil
 import threading
-from typing import Tuple
 import tkinter as tk
 import psutil
 import signal
@@ -29,7 +28,7 @@ class DuplicateImagePresenter:
 
     def _setup_bindings(self):
         self.root.bind('<Key>', self._handle_keypress)
-        self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         signal.signal(signal.SIGINT, self._signal_handler)
 
     def _setup_threads(self):
@@ -49,21 +48,19 @@ class DuplicateImagePresenter:
 
         item = self.finder.get_next_duplicate()
         if item is None:
-            if self.finder.is_processing_complete():
-                if self.finder.get_pending_count() == 0:
-                    self._handle_processing_complete()
-                else:
-                    self.view.set_status_text("待機中...")
-                    self.view.clear_images()
-                    self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
-            else:
-                self.view.set_status_text("待機中...")
-                self.view.clear_images()
-                self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
+            self._handle_no_image()
         else:
             self._display_image_pair(item)
 
-    def _display_image_pair(self, item: Tuple[str, str]):
+    def _handle_no_image(self):
+        if self.finder.is_processing_complete() and self.finder.get_pending_count() == 0:
+            self._handle_processing_complete()
+        else:
+            self.view.set_status_text("待機中...")
+            self.view.clear_images()
+            self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
+
+    def _display_image_pair(self, item):
         filepath1, filepath2 = item
         self.view.set_frame_image_a(filepath1)
         self.view.set_frame_image_b(filepath2)
@@ -77,7 +74,7 @@ class DuplicateImagePresenter:
     def _handle_processing_complete(self):
         if self.finder.get_pending_count() == 0:
             self.view.set_status_text("処理完了")
-            self.root.after(2000, self._on_closing)
+            self.root.after(2000, self.on_closing)
         else:
             self.view.set_status_text("待機中...")
             self.root.after(Config.UI_UPDATE_INTERVAL, self._next_image)
@@ -96,20 +93,20 @@ class DuplicateImagePresenter:
         os.makedirs(trash_folder, exist_ok=True)
         shutil.move(file_path, os.path.join(trash_folder, os.path.basename(file_path)))
 
-    def _on_closing(self):
+    def on_closing(self):
         self._shutdown_requested = True
         threading.Thread(target=self._shutdown_procedure).start()
 
     def _shutdown_procedure(self):
         self.finder.stop()
+        self.wait_for_threads()
+        self.root.after(0, self._destroy_root)
 
-        if self.finder_thread is not None:
+    def wait_for_threads(self):
+        if self.finder_thread:
             self.finder_thread.join()
-
         if self.monitor_thread.is_alive():
             self.monitor_thread.join()
-
-        self.root.after(0, self._destroy_root)
 
     def _destroy_root(self):
         self.root.quit()
@@ -138,4 +135,4 @@ class DuplicateImagePresenter:
     def _signal_handler(self, signum, frame):
         self._shutdown_requested = True
         print("\nShutdown requested. Cleaning up...")
-        self._on_closing()
+        self.on_closing()

@@ -1,7 +1,6 @@
 import configparser
 from typing import Tuple
 
-
 class Config:
     MAX_IMAGES = 50000
     INITIAL_NUM_THREADS = 4
@@ -24,9 +23,7 @@ class Config:
     )
     SIMILARITY_THRESHOLD = 10  # 初期値
 
-
 def load_config(config_file: str = "config.ini") -> Tuple[str, str, int]:
-    """設定ファイルを読み込む"""
     config = configparser.ConfigParser()
     config.read(config_file)
     image_folder = config.get("Paths", "image_folder", fallback="")

@@ -1,10 +1,11 @@
+import signal
+import sys
+import tkinter as tk
+
 from config import load_config, Config
 from model import DuplicateImageFinder
 from view import UIComponents
 from presenter import DuplicateImagePresenter
-import tkinter as tk
-import signal
-import sys
 
 def signal_handler(signum, frame):
     print("\nShutdown requested. Cleaning up...")
@@ -13,7 +14,6 @@ def signal_handler(signum, frame):
     sys.exit(0)
 
 def main():
-    """メイン関数"""
     signal.signal(signal.SIGINT, signal_handler)
 
     image_folder, trash_folder, similarity_threshold = load_config()
@@ -29,11 +29,7 @@ def main():
     presenter.start()
     root.mainloop()
 
-    if hasattr(presenter, 'finder_thread'):
-        presenter.finder_thread.join()
-    if hasattr(presenter, 'monitor_thread'):
-        presenter.monitor_thread.join()
-
+    presenter.wait_for_threads()
     print("Processing complete.")
 
 if __name__ == "__main__":
