@@ -21,11 +21,13 @@ class Config:
         "3. 自動的に次の重複画像が表示されます。\n"
         "4. 全ての画像が処理されるとウィンドウが閉じます。"
     )
-    SIMILARITY_THRESHOLD = 10  # 初期値
+    SIMILARITY_THRESHOLD = 10
 
 def load_config(config_file: str = "config.ini") -> Tuple[str, str, int]:
     config = configparser.ConfigParser()
-    config.read(config_file)
+
+    with open(config_file, 'r', encoding='utf-8') as f:
+        config.read_file(f)
     image_folder = config.get("Paths", "image_folder", fallback="")
     trash_folder = config.get("Paths", "trash_folder", fallback="")
     similarity_threshold = config.getint("Settings", "similarity_threshold", fallback=Config.SIMILARITY_THRESHOLD)
